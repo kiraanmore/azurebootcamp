@@ -1,0 +1,38 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {},
+    "variables": {
+        "templateBaseUrl": "https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/postgresql-on-ubuntu/",
+        "vnetTemplateUrl": "[uri(variables('templateBaseUrl'), 'vnet.json')]",
+        "vmTemplateUrl": "[uri(variables('templateBaseUrl'), 'vm.json')]"
+    },
+    "resources": [
+      {
+        "name": "vnetTemplate",
+        "apiVersion": "2017-05-10",
+        "type": "Microsoft.Resources/deployments",
+        "properties": {
+          "mode": "Incremental",
+          "templateLink": {
+              "uri":"[variables('vnetTemplateUrl')]",
+              "contentVersion":"1.0.0.0"
+              }
+        }
+      },
+      {
+        "name": "vmTemplate",
+        "apiVersion": "2017-05-10",
+        "type": "Microsoft.Resources/deployments",
+        "properties": {
+          "mode": "Incremental",
+          "templateLink": {
+              "uri":"[variables('vmTemplateUrl')]",
+              "contentVersion":"1.0.0.0"
+              }
+        }
+      }
+    ],
+    "outputs": {
+    }
+  }
