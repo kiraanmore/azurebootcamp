@@ -3,7 +3,7 @@
     "contentVersion": "1.0.0.0",
     "parameters": {},
     "variables": {
-        "templateBaseUrl": "https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/postgresql-on-ubuntu/",
+        "templateBaseUrl": "https://raw.githubusercontent.com/kiraanmore/azurebootcamp/master/vmtemplate/",
         "vnetTemplateUrl": "[uri(variables('templateBaseUrl'), 'vnet.json')]",
         "vmTemplateUrl": "[uri(variables('templateBaseUrl'), 'vm.json')]"
     },
@@ -24,7 +24,7 @@
         "name": "vmTemplate",
         "apiVersion": "2017-05-10",
         "type": "Microsoft.Resources/deployments",
-        "properties": { 
+        "properties": {
           "mode": "Incremental",
           "templateLink": {
               "uri":"[variables('vmTemplateUrl')]",
