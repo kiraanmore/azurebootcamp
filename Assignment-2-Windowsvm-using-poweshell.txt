@@ -1,0 +1,71 @@
+##############################
+##############################
+### OUTPUT FROM POWERSHELL ###
+##############################
+##############################
+
+#Connect Azure account
+PS C:\> Connect-AzAccount
+
+Account                SubscriptionName TenantId                             Environment
+-------                ---------------- --------                             -----------
+kiran.more@globant.com Free Trial       c160a942-c869-429f-8a96-f8c8296d57db AzureCloud
+PS C:\>
+
+#Set ResourceGroup name variable
+PS C:\> $resourceGroup = "Kiran1"
+
+#Set location for VM creation
+PS C:\> $location = "westus"
+
+#Set name for VM in vmName variable
+PS C:\> $vmName = "WinServer2"
+
+# Create user object
+PS C:\> $cred = Get-Credential
+cmdlet Get-Credential at command pipeline position 1
+Supply values for the following parameters:
+
+#Set VirtualNetwork name variable
+PS C:\> $vnet = "Kiran1-vnet"
+
+#Get subnet configuration
+PS C:\> $subnetConfig = (Get-AzVirtualNetwork -Name Kiran1-vnet | Get-AzVirtualNetworkSubnetConfig).Id
+
+# Create a public IP address and specify a DNS name
+PS C:\> $pip = New-AzPublicIpAddress -ResourceGroupName $resourceGroup -Location $location `
+  -Name "mypublicdns$(Get-Random)" -AllocationMethod Static -IdleTimeoutInMinutes 4
+
+# Create an inbound network security group rule for port 3389
+PS C:\> $nsgRuleRDP = New-AzNetworkSecurityRuleConfig -Name myNetworkSecurityGroupRuleRDP  -Protocol Tcp `
+  -Direction Inbound -Priority 1000 -SourceAddressPrefix * -SourcePortRange * -DestinationAddressPrefix * `
+  -DestinationPortRange 3389 -Access Allow
+
+# Create a network security group
+PS C:\> $nsg = New-AzNetworkSecurityGroup -ResourceGroupName $resourceGroup -Location $location `
+  -Name myNetworkSecurityGroup -SecurityRules $nsgRuleRDP
+
+# Create a virtual network card and associate with public IP address and NSG
+PS C:\> $nic = New-AzNetworkInterface -Name myNic -ResourceGroupName $resourceGroup -Location $location `
+  -SubnetId $subnetConfig -PublicIpAddressId $pip.Id -NetworkSecurityGroupId $nsg.Id
+
+# Get availabilityset id
+PS C:\> $availabilitySet = (Get-AzAvailabilitySet -ResourceGroupName $resourceGroup).Id
+
+# Create a virtual machine configuration
+PS C:\> $vmConfig = New-AzVMConfig -VMName $vmName -VMSize Standard_D1 -AvailabilitySetId $availabilitySet | `
+Set-AzVMOperatingSystem -Windows -ComputerName $vmName -Credential $cred | `
+Set-AzVMSourceImage -PublisherName MicrosoftWindowsServer -Offer WindowsServer -Skus 2016-Datacenter -Version latest | `
+Add-AzVMNetworkInterface -Id $nic.Id
+
+# Create a virtual machine
+PS C:\> New-AzVM -ResourceGroupName $resourceGroup -Location $location -VM $vmConfig
+WARNING: Since there is no standard storage account in the same region as the VM, new standard storage account, freekiran1wins04100006
+0, is created for boot diagnostics.
+
+RequestId IsSuccessStatusCode StatusCode ReasonPhrase
+--------- ------------------- ---------- ------------
+                         True         OK OK          
+
+
+PS C:\> 
