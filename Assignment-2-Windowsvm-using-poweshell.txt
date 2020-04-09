@@ -69,3 +69,8 @@ RequestId IsSuccessStatusCode StatusCode ReasonPhrase
 
 
 PS C:\> 
+
+
+##############################
+Reference : https://docs.microsoft.com/en-us/azure/virtual-machines/scripts/virtual-machines-windows-powershell-sample-create-vm?toc=/azure/virtual-machines/windows/toc.json
+##############################
