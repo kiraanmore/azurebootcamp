@@ -1,0 +1,57 @@
+##############################
+##############################
+### OUTPUT FROM POWERSHELL ###
+##############################
+##############################
+
+#Connect Azure account
+PS C:\> Connect-AzAccount
+
+Account                SubscriptionName TenantId                             Environment
+-------                ---------------- --------                             -----------
+kiran.more@globant.com Free Trial       c160a942-c869-429f-8a96-f8c8296d57db AzureCloud
+PS C:\>
+
+#Get list of existing storage account
+PS C:\> Get-AzStorageAccount | Select StorageAccountName, Location
+
+StorageAccountName      Location
+------------------      --------
+freekiran1wins041000060 westus  
+
+
+#Set ResourceGroup name variable
+PS C:\> $resourceGroup = "Kiran1"
+
+#Set name for storage account creation
+PS C:\> $storageaccountname = "storageaccount1042020"
+
+#Set location for storage account creation
+PS C:\> $location = "westus"
+
+#Create storage account with Cool AccessTier
+PS C:\> New-AzStorageAccount -ResourceGroupName $resourceGroup -AccountName $storageaccountname -Location $location -SkuName Standard_LRS -Kind BlobStorage -AccessTier Cool
+
+StorageAccountName    ResourceGroupName PrimaryLocation SkuName      Kind        AccessTier CreationTime        ProvisioningState Ena
+                                                                                                                                  ble
+                                                                                                                                  Htt
+                                                                                                                                  psT
+                                                                                                                                  raf
+                                                                                                                                  fic
+                                                                                                                                  Onl
+                                                                                                                                  y  
+------------------    ----------------- --------------- -------      ----        ---------- ------------        ----------------- ---
+storageaccount1042020 Kiran1            westus          Standard_LRS BlobStorage Cool       10-04-2020 07:23:41 Succeeded         Tru
+
+
+#Get list of storage account
+PS C:\> Get-AzStorageAccount | Select StorageAccountName, Location
+
+StorageAccountName      Location
+------------------      --------
+freekiran1wins041000060 westus  
+storageaccount1042020   westus  
+
+
+
+PS C:\> 
