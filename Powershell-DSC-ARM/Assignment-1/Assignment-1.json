@@ -90,7 +90,7 @@
       }
     },
     "_artifactsLocation": {
-      "defaultValue": "https://raw.githubusercontent.com/kiraanmore/azurebootcamp/master/Powershell-DSC-ARM/Assignment-1",
+      "defaultValue": "https://raw.githubusercontent.com/kiraanmore/azurebootcamp/master/Powershell-DSC-ARM/Assignment-1/WindowsWebserver.zip",
       "type": "string",
       "metadata": {
         "description": "The base URI where artifacts required by this template are located. When the template is deployed using the accompanying scripts, a private location in the subscription will be used and this value will be automatically generated."
@@ -225,26 +225,25 @@
           "extensionProfile": {
             "extensions": [
               {
-                "name": "customScript",
+                "name": "Microsoft.Powershell.DSC",
                 "properties": {
-                  "publisher": "Microsoft.Compute",
-                  "settings": {
-                    "fileUris": [
-                      "[concat(parameters('_artifactsLocation'), '/WindowsWebserver.ps1')]"
-                    ]
-                  },
-                  "typeHandlerVersion": "2.76",
+                  "publisher": "Microsoft.Powershell",
+                  "type": "DSC",
+                  "typeHandlerVersion": "2.9",
                   "autoUpgradeMinorVersion": true,
-                  "protectedSettings": {
-                    "commandToExecute": "powershell -ExecutionPolicy Unrestricted -File helloWorld.ps1"
-                  },
-                  "type": "CustomScriptExtension"
+                  "settings": {
+                    "configuration": {
+                      "url": "[parameters('_artifactsLocation')]",
+                      "script": "WindowsWebserver.ps1",
+                      "function": "IIS"
+                    }
+                  }
                 }
               }
             ]
           }
+          }
         }
       }
-    }
   ]
 }
