@@ -2,52 +2,20 @@
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
-      "vnetName": {
-          "type": "string",
-          "defaultValue": "VNet",
-          "metadata": {
-              "description": "VNet name"
-            }
-        },
-      "vnetAddressPrefix": {
-          "type": "string",
-          "defaultValue": "10.0.0.0/16",
-          "metadata": {
-              "description": "Address prefix"
-            }
-        },
-      "subnetPrefix": {
-        "type": "string",
-        "defaultValue": "10.0.0.0/24",
-        "metadata": {
-          "description": "Subnet Prefix"
-        }
-      },
+	"vnetName": {
+       "type": "string",
+       "defaultValue": "VNet",
+       "metadata": {
+         "description": "VNet name"
+       }
+     },
       "subnetName": {
         "type": "string",
         "defaultValue": "Subnet",
         "metadata": {
           "description": "Subnet Name"
         }
-      },
-	  "publicIpAddressName": {
-	  "type": "string",
-	  "defaultValue": "PublicIP",
-	  "metadata": {
-        "description": "Public IP address Name"
-      }
-	},
-	"networkSecurityGroupName": {
-	  "type": "string",
-	  "defaultValue": "VMNSG",
-	  "metadata": {
-        "description": "Network Security Group Name"
-      }
-	},
-	"networkInterfaceConfigurations": {
-            "type": "string",
-			"defaultValue": "nic"
-    },
+      },	 
     "vmSku": {
       "type": "string",
       "defaultValue": "Standard_D1",
@@ -57,6 +25,7 @@
     },
     "vmssName": {
       "type": "string",
+	  "defaultValue": "vmssazb1324d",
       "metadata": {
         "description": "String used as a base for naming resources. Must be 3-61 characters in length and globally unique across Azure. A hash is prepended to this string for some resources, and resource-specific information is appended."
       },
@@ -70,6 +39,10 @@
       "defaultValue": 1,
       "maxValue": 100
     },
+	"computerNamePrefix": {
+	  "type": "string",
+	  "defaultValue": "winsrv"
+	},
     "adminUsername": {
       "type": "string",
       "metadata": {
@@ -82,13 +55,6 @@
         "description": "Admin password on all VMs."
       }
     },
-    "location": {
-      "type": "string",
-      "defaultValue": "[resourceGroup().location]",
-      "metadata": {
-        "description": "Location for all resources."
-      }
-    },
     "_artifactsLocation": {
       "defaultValue": "https://raw.githubusercontent.com/kiraanmore/azurebootcamp/master/Powershell-DSC-ARM/Assignment-1/WindowsWebserver.zip",
       "type": "string",
@@ -97,72 +63,24 @@
       }
     }
   },
-  "variables": {},
+  "variables": {
+    "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('subnetName'))]",
+    "publicIPAddressName": "pip",
+    "loadBalancerName": "loadBalancer",
+    "loadBalancerFrontEndName": "loadBalancerFrontEnd",
+    "loadBalancerBackEndName": "loadBalancerBackEnd",
+    "loadBalancerProbeName": "loadBalancerHttpProbe",
+    "loadBalancerNatPoolName": "loadBalancerNatPool"
+  },
   "resources": [
-      {
-      "apiVersion": "2018-10-01",
-      "type": "Microsoft.Network/virtualNetworks",
-      "name": "[parameters('vnetName')]",
-      "location": "[parameters('location')]",
-      "properties": {
-        "addressSpace": {
-          "addressPrefixes": [
-            "[parameters('vnetAddressPrefix')]"
-          ]
-        }
-      },
-      "resources": [
-        {
-          "apiVersion": "2018-10-01",
-          "type": "subnets",
-          "location": "[parameters('location')]",
-          "name": "[parameters('subnetName')]",
-          "dependsOn": [
-            "[parameters('vnetName')]"
-          ],
-          "properties": {
-            "addressPrefix": "[parameters('subnetPrefix')]"
-          }
-        }
-      ]
-    },
-	{
-            "name": "[parameters('networkSecurityGroupName')[copyIndex()].name]",
-            "type": "Microsoft.Network/networkSecurityGroups",
-            "apiVersion": "2019-02-01",
-            "location": "[parameters('location')]",
-            "properties": {
-                "securityRules": "[parameters('networkSecurityGroupName')[copyIndex()].rules]"
-            },
-            "copy": {
-                "name": "networkSecurityGroupName",
-                "count": "[length(parameters('networkSecurityGroupName'))]"
-            }
-        },
-        {
-            "name": "[parameters('publicIpAddressName')[copyIndex()].name]",
-            "type": "Microsoft.Network/publicIPAddresses",
-            "location": "[parameters('location')]",
-            "apiVersion": "2019-02-01",
-            "sku": {
-                "name": "Standard"
-            },
-            "properties": {
-                "publicIPAllocationMethod": "Static",
-                "idleTimeoutInMinutes": 15
-            },
-            "copy": {
-                "name": "publicIpAddressName",
-                "count": "[length(parameters('publicIpAddressName'))]"
-            }
-        },
     {
       "type": "Microsoft.Compute/virtualMachineScaleSets",
       "name": "[parameters('vmssName')]",
       "location": "[resourceGroup().location]",
       "apiVersion": "2017-03-30",
       "dependsOn": [
-        "[concat('Microsoft.Network/virtualNetworks/', parameters('vnetName'))]"
+        "[concat('Microsoft.Network/virtualNetworks/', parameters('vnetName'))]",
+        "[resourceId('Microsoft.Network/loadBalancers', variables('loadBalancerName'))]"
       ],
       "sku": {
         "name": "[parameters('vmSku')]",
@@ -187,40 +105,39 @@
             }
           },
           "osProfile": {
-            "computerNamePrefix": "[parameters('vmssName')]",
+            "computerNamePrefix": "[parameters('computerNamePrefix')]",
             "adminUsername": "[parameters('adminUsername')]",
             "adminPassword": "[parameters('adminPassword')]"
           },
           "networkProfile": {
-            "copy": [
-			{
-				"name": "networkInterfaceConfigurations",
-				"count": "[length(parameters('networkInterfaceConfigurations'))]",
-				"input": {
-					"name": "[parameters('networkInterfaceConfigurations')[copyIndex('networkInterfaceConfigurations')].name]",
-					"properties": {
-						"primary": "[parameters('networkInterfaceConfigurations')[copyIndex('networkInterfaceConfigurations')].primary]",
-						"enableAcceleratedNetworking": "[parameters('networkInterfaceConfigurations')[copyIndex('networkInterfaceConfigurations')].enableAcceleratedNetworking]",
-						"ipConfigurations": [
-							{
-								"name": "[concat(parameters('networkInterfaceConfigurations')[copyIndex('networkInterfaceConfigurations')].name, '-defaultIpConfiguration')]",
-								"properties": {
-									"subnet": {
-										"id": "[parameters('networkInterfaceConfigurations')[copyIndex('networkInterfaceConfigurations')].subnetId]"
-									},
-									"primary": "[parameters('networkInterfaceConfigurations')[copyIndex('networkInterfaceConfigurations')].primary]",
-									"applicationGatewayBackendAddressPools": "[parameters('networkInterfaceConfigurations')[copyIndex('networkInterfaceConfigurations')].applicationGatewayBackendAddressPools]",
-									"loadBalancerBackendAddressPools": "[parameters('networkInterfaceConfigurations')[copyIndex('networkInterfaceConfigurations')].loadBalancerBackendAddressPools]",
-									"loadBalancerInboundNatPools": "[parameters('networkInterfaceConfigurations')[copyIndex('networkInterfaceConfigurations')].loadBalancerInboundNatPools]",
-									"publicIPAddressConfiguration": "[if( equals( parameters('networkInterfaceConfigurations')[copyIndex('networkInterfaceConfigurations')].pipName, ''), json('null'), union(json(concat('{\"name\": \"', parameters('networkInterfaceConfigurations')[copyIndex('networkInterfaceConfigurations')].pipName, '\"}')), json('{\"properties\": { \"idleTimeoutInMinutes\": 15}}')))]"
-								}
-							}
-						],
-						"networkSecurityGroup": "[if( equals( parameters('networkInterfaceConfigurations')[copyIndex('networkInterfaceConfigurations')].nsgId, ''), json('null'),json(concat('{\"id\": \"', parameters('networkInterfaceConfigurations')[copyIndex('networkInterfaceConfigurations')].nsgId, '\"}')))]"
-					}
-				}
-			}
-		]
+            "networkInterfaceConfigurations": [
+              {
+                "name": "nic",
+                "properties": {
+                  "primary": true,
+                  "ipConfigurations": [
+                    {
+                      "name": "ipconfig",
+                      "properties": {
+                        "subnet": {
+                          "id": "[variables('subnetRef')]"
+                        },
+                        "loadBalancerBackendAddressPools": [
+                          {
+                            "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/loadBalancers/', variables('loadBalancerName'), '/backendAddressPools/', variables('loadBalancerBackEndName'))]"
+                          }
+                        ],
+                        "loadBalancerInboundNatPools": [
+                          {
+                            "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/loadBalancers/', variables('loadBalancerName'), '/inboundNatPools/', variables('loadBalancerNatPoolName'))]"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
           },
           "extensionProfile": {
             "extensions": [
@@ -228,22 +145,127 @@
                 "name": "Microsoft.Powershell.DSC",
                 "properties": {
                   "publisher": "Microsoft.Powershell",
-                  "type": "DSC",
-                  "typeHandlerVersion": "2.9",
-                  "autoUpgradeMinorVersion": true,
                   "settings": {
                     "configuration": {
                       "url": "[parameters('_artifactsLocation')]",
                       "script": "WindowsWebserver.ps1",
                       "function": "IIS"
                     }
-                  }
+                  },
+                  "typeHandlerVersion": "2.9",
+                  "autoUpgradeMinorVersion": true,
+                  "type": "DSC"
                 }
               }
             ]
           }
-          }
         }
       }
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "name": "[parameters('vnetName')]",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2017-04-01",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "10.0.0.0/16"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[parameters('subnetName')]",
+            "properties": {
+              "addressPrefix": "10.0.0.0/24"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[variables('publicIPAddressName')]",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2017-04-01",
+      "properties": {
+        "publicIPAllocationMethod": "Dynamic",
+        "dnsSettings": {
+          "domainNameLabel": "[toLower(parameters('vmssName'))]"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Network/loadBalancers",
+      "name": "[variables('loadBalancerName')]",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2017-04-01",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))]"
+      ],
+      "properties": {
+        "frontendIPConfigurations": [
+          {
+            "name": "[variables('loadBalancerFrontEndName')]",
+            "properties": {
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressName'))]"
+              }
+            }
+          }
+        ],
+        "backendAddressPools": [
+          {
+            "name": "[variables('loadBalancerBackendName')]"
+          }
+        ],
+        "loadBalancingRules": [
+          {
+            "name": "roundRobinLBRule",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('loadBalancerName')), '/frontendIPConfigurations/', variables('loadBalancerFrontEndName'))]"
+              },
+              "backendAddressPool": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('loadBalancerName')), '/backendAddressPools/', variables('loadBalancerBackendName'))]"
+              },
+              "protocol": "Tcp",
+              "frontendPort": 80,
+              "backendPort": 80,
+              "enableFloatingIP": false,
+              "idleTimeoutInMinutes": 5,
+              "probe": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('loadBalancerName')), '/probes/', variables('loadBalancerProbeName'))]"
+              }
+            }
+          }
+        ],
+        "probes": [
+          {
+            "name": "[variables('loadBalancerProbeName')]",
+            "properties": {
+              "protocol": "Tcp",
+              "port": 80,
+              "intervalInSeconds": "5",
+              "numberOfProbes": "2"
+            }
+          }
+        ],
+        "inboundNatPools": [
+          {
+            "name": "[variables('loadBalancerNatPoolName')]",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('loadBalancerName')), '/frontendIPConfigurations/', variables('loadBalancerFrontEndName'))]"
+              },
+              "protocol": "Tcp",
+              "frontendPortRangeStart": 50000,
+              "frontendPortRangeEnd": 50019,
+              "backendPort": 3389
+            }
+          }
+        ]
+      }
+    }
   ]
 }
