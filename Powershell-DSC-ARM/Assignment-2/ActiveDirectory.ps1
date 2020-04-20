@@ -6,6 +6,7 @@ WindowsFeature ADDSInstall
 {
            Ensure = 'Present'
            Name = 'AD-Domain-Services'
+           IncludeAllSubFeature = $true
        }
 }
 }
